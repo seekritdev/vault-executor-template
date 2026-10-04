@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "seekrit-vault-executor",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // Browser Run, for sites with no API (`siteProfile` in vault.config.ts). The
+  // executor restores a captured session into a browser fenced to the site's
+  // domains and hands your agent the session id. Workers Paid plan.
+  "browser": { "binding": "BROWSER" },
+  // Three Durable Objects, no plaintext persisted in any of them:
+  //   ExecutorIdentity — the wrapping keypair and the Vault credential (singleton)
+  //   ConnectFlow      — one OAuth round trip in progress (state + PKCE verifier)
+  //   Connection       — one per connection: the refresh single writer and its journal
+  "durable_objects": {
+    "bindings": [
+      { "name": "IDENTITY", "class_name": "ExecutorIdentity" },
+      { "name": "CONNECT_FLOW", "class_name": "ConnectFlow" },
+      { "name": "CONNECTION", "class_name": "Connection" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["ExecutorIdentity"] },
+    { "tag": "v2", "new_sqlite_classes": ["ConnectFlow", "Connection"] }
+  ]
+  // Secrets (set with `wrangler secret put`):
+  //   EXECUTOR_TOKEN       — the bearer your backend presents (any long random string).
+  //   GOOGLE_CLIENT_SECRET — one per OAuth provider, named by its `clientSecretBinding`.
+}
